@@ -1,0 +1,5 @@
+name: lifeRefCode
+version: '${project.version}'
+main: mrc.liferefcode.LifeRefCode
+api-version: '1.16'
+author: mrcDEV

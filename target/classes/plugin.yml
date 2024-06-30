@@ -1,0 +1,5 @@
+name: lifeRefCode
+version: '1.0'
+main: mrc.liferefcode.LifeRefCode
+api-version: '1.16'
+author: mrcDEV

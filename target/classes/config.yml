@@ -1,0 +1,17 @@
+refcodes:
+  examplecode: "give %player% minecraft:diamond 5"
+
+messages:
+  ipAlreadyUsed: "Этот IP уже использовал реферальный код."
+  codeUsed: "Вы использовали реферальный код: %code%"
+  commandNotFound: "Ошибка: команда для этого реферального кода не найдена."
+  invalidCode: "Реферальный код недействителен."
+  usage: "Используйте: /usecode <код>"
+
+command:
+  name: "usecode"
+  description: "Use a referral code"
+  usage: "/usecode <code>"
+  permission: "referralsystem.usecode"
+
+  # LifeTime <3
