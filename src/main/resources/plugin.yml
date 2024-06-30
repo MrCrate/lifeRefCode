@@ -3,3 +3,18 @@ version: '${project.version}'
 main: mrc.liferefcode.LifeRefCode
 api-version: '1.16'
 author: mrcDEV
+
+commands:
+  ref:
+    usage: "/ref <код>"
+  refadmin:
+    description: "Управление реферальной системой"
+    usage: "/refadmin <list|check> [player]"
+    permission: "referralsystem.admin"
+  refmenu:
+    description: "Open the referral menu"
+    usage: "/<command>"
+  permissions:
+    referralsystem.admin:
+    description: Gives access to admin commands of Referral System
+    default: op

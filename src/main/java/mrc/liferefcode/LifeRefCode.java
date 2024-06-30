@@ -1,120 +1,131 @@
 package mrc.liferefcode;
 
-import org.bukkit.Bukkit;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.defaults.BukkitCommand;
+import mrc.liferefcode.admin.AdminCommands;
+import mrc.liferefcode.commands.ReferralCommand;
+import mrc.liferefcode.commands.ReferralMenuCommand;
+import mrc.liferefcode.menu.ReferralMenu;
+import net.md_5.bungee.api.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.UUID;
 
-public class LifeRefCode extends JavaPlugin implements Listener {
+public class LifeRefCode extends JavaPlugin {
 
-    private HashMap<UUID, String> playerIPs = new HashMap<>(); // хранит айпи игроков
-    private HashSet<String> usedIPs = new HashSet<>(); // хранит использованные IP
+    HashMap<UUID, String> playerIPs = new HashMap<>();
+    public HashMap<String, Integer> referralCount = new HashMap<>();
+    HashMap<UUID, Long> playerPlayTime = new HashMap<>();
+    HashSet<String> usedIPs = new HashSet<>();
+    HashMap<String, UUID> referralCodes = new HashMap<>();
+    private FileConfiguration menuConfig;
 
     @Override
     public void onEnable() {
-        this.getLogger().warning("Сделано для LifeTime");
-        this.getLogger().warning("Разработчик: mrcDEV");
-        // Регистрация событий
-        getServer().getPluginManager().registerEvents(this, this);
-        // Загрузка конфигурации
         saveDefaultConfig();
+        saveMenuConfig();
 
-        // Регистрация команды из конфигурационного файла
-        registerCommandFromConfig();
+        getServer().getPluginManager().registerEvents(new PlayTimeTracker(this), this);
+        getServer().getPluginManager().registerEvents(new ReferralMenu(this), this);
+
+        getCommand("ref").setExecutor(new ReferralCommand(this));
+        getCommand("refadmin").setExecutor(new AdminCommands(this));
+        getCommand("refmenu").setExecutor(new ReferralMenuCommand(this));
     }
 
     @Override
     public void onDisable() {
-        // Сохранение данных перед отключением
         saveConfig();
     }
 
-    private void registerCommandFromConfig() {
-        FileConfiguration config = getConfig();
-        String commandName = config.getString("command.name", "usecode");
-        String commandDescription = config.getString("command.description", "Use a referral code");
-        String commandUsage = config.getString("command.usage", "/usecode <code>");
-        String commandPermission = config.getString("command.permission", "referralsystem.usecode");
-
-        BukkitCommand command = new BukkitCommand(commandName) {
-            @Override
-            public boolean execute(CommandSender sender, String commandLabel, String[] args) {
-                if (sender instanceof Player) {
-                    Player player = (Player) sender;
-                    if (args.length == 1) {
-                        String code = args[0];
-                        useReferralCode(player, code);
-                        return true;
-                    } else {
-                        player.sendMessage(config.getString("messages.usage", commandUsage));
-                        return false;
-                    }
-                }
-                return false;
-            }
-        };
-
-        command.setDescription(commandDescription);
-        command.setUsage(commandUsage);
-        command.setPermission(commandPermission);
-
-        getCommandMap().register(getDescription().getName(), command);
+    public FileConfiguration getMenuConfig() {
+        return menuConfig;
     }
 
-    private org.bukkit.command.CommandMap getCommandMap() {
-        try {
-            java.lang.reflect.Field commandMapField = Bukkit.getServer().getClass().getDeclaredField("commandMap");
-            commandMapField.setAccessible(true);
-            return (org.bukkit.command.CommandMap) commandMapField.get(Bukkit.getServer());
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+    public void saveMenuConfig() {
+        File menuFile = new File(getDataFolder(), "menu.yml");
+        if (!menuFile.exists()) {
+            saveResource("menu.yml", false);
         }
+        menuConfig = YamlConfiguration.loadConfiguration(menuFile);
     }
 
-    public boolean useReferralCode(Player player, String code) {
+    public boolean useReferralCode(Player player, String referrerName) {
         FileConfiguration config = getConfig();
+        UUID playerUUID = player.getUniqueId();
         String playerIP = player.getAddress().getAddress().getHostAddress();
 
-        if (config.contains("refcodes." + code)) {
-            if (usedIPs.contains(playerIP)) {
-                player.sendMessage(config.getString("messages.ipAlreadyUsed", "Этот IP уже использовал реферальный код."));
-                return false;
-            }
+        if (playerPlayTime.getOrDefault(playerUUID, 0L) < 7200) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.insufficientPlayTime")));
+            return false;
+        }
 
-            usedIPs.add(playerIP);
-            playerIPs.put(player.getUniqueId(), playerIP);
+        if (usedIPs.contains(playerIP)) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.ipAlreadyUsed")));
+            return false;
+        }
 
-            String command = config.getString("refcodes." + code);
-            if (command != null) {
-                command = command.replace("%player%", player.getName());
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
-                player.sendMessage(config.getString("messages.codeUsed", "Вы использовали реферальный код: %code%").replace("%code%", code));
+        if (referralCodes.containsKey(referrerName)) {
+            UUID referrerUUID = referralCodes.get(referrerName);
+            Player referrer = getServer().getPlayer(referrerUUID);
+
+            if (referrer != null && !referrerUUID.equals(playerUUID)) {
+                usedIPs.add(playerIP);
+                referralCount.put(referrerName, referralCount.getOrDefault(referrerName, 0) + 1);
+                int referrals = referralCount.get(referrerName);
+
+                int reward = getRewardForReferrals(referrals);
+                giveReward(player, reward);
+                giveReward(referrer, reward);
+
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.codeUsed")));
+                referrer.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.referrerReward")));
+
+                logReferral(player, referrerName);
                 return true;
             } else {
-                player.sendMessage(config.getString("messages.commandNotFound", "Ошибка: команда для этого реферального кода не найдена."));
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.invalidReferrer")));
                 return false;
             }
         } else {
-            player.sendMessage(config.getString("messages.invalidCode", "Реферальный код недействителен."));
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.invalidCode")));
             return false;
         }
     }
 
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
-        String playerIP = player.getAddress().getAddress().getHostAddress();
-        playerIPs.put(player.getUniqueId(), playerIP);
+    public int getReferralCount(String playerName) {
+        return referralCount.getOrDefault(playerName, 0);
+    }
+
+    public int getReferralLevel(String playerName) {
+        int count = getReferralCount(playerName);
+        if (count >= 30) return 3;
+        if (count >= 10) return 2;
+        return 1;
+    }
+
+    public int getTotalRewards(String playerName) {
+        int count = getReferralCount(playerName);
+        if (count >= 30) return count * 650;
+        if (count >= 10) return count * 400;
+        return count * 200;
+    }
+
+    private int getRewardForReferrals(int referrals) {
+        if (referrals >= 30) return 650;
+        if (referrals >= 10) return 400;
+        return 200;
+    }
+
+    private void giveReward(Player player, int reward) {
+        player.sendMessage("Вы получили " + reward + " рубинов!");
+    }
+
+    private void logReferral(Player player, String referrerName) {
+        getLogger().info("Игрок " + player.getName() + " 1323123 " + referrerName);
     }
 }

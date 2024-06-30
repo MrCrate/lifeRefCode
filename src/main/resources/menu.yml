@@ -1,0 +1,41 @@
+menu:
+  title: "Referral System"
+  size: 27
+  info:
+    slot: 13
+    material: "BOOK"
+    name: "&6Информация"
+    lore:
+      - "&f1. Приглашайте друзей"
+      - "&f2. Получайте награды за приглашения"
+      - "&f3. Используйте команду /ref <код>"
+  levels:
+    level1:
+      slot: 21
+      material: "PLAYER_HEAD"
+      name: "&6Уровень 1"
+      lore:
+        - "&f0-10 приглашенных"
+        - "&fНаграда: 200 рубинов за каждого"
+    level2:
+      slot: 22
+      material: "PLAYER_HEAD"
+      name: "&6Уровень 2"
+      lore:
+        - "&f10-30 приглашенных"
+        - "&fНаграда: 400 рубинов за каждого"
+    level3:
+      slot: 23
+      material: "PLAYER_HEAD"
+      name: "&6Уровень 3"
+      lore:
+        - "&f30+ приглашенных"
+        - "&fНаграда: 650 рубинов за каждого"
+  playerStats:
+    slot: 4
+    material: "PLAYER_HEAD"
+    name: "&6Ваша статистика"
+    lore:
+      - "&fКоличество рефералов: %referrals%"
+      - "&fВаш уровень: %level%"
+      - "&fВсего получено рубинов: %rewards%"

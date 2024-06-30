@@ -3,15 +3,19 @@ refcodes:
 
 messages:
   ipAlreadyUsed: "Этот IP уже использовал реферальный код."
-  codeUsed: "Вы использовали реферальный код: %code%"
-  commandNotFound: "Ошибка: команда для этого реферального кода не найдена."
+  codeUsed: "Вы использовали реферальный код!"
+  referrerReward: "Игрок, которого вы пригласили, использовал ваш реферальный код!"
   invalidCode: "Реферальный код недействителен."
-  usage: "Используйте: /usecode <код>"
+  invalidReferrer: "Реферальный код недействителен или вы не можете использовать свой собственный код."
+  insufficientPlayTime: "Вы не можете использовать реферальный код до того, как наиграете 2 часа на сервере."
+  usage: "Используйте: /ref <код>"
 
 command:
-  name: "usecode"
-  description: "Use a referral code"
-  usage: "/usecode <code>"
-  permission: "referralsystem.usecode"
+  name: "ref"
+  description: "Использовать реферальный код"
+  usage: "/ref <код>"
+  permission: "referralsystem.use"
+
+
 
   # LifeTime <3

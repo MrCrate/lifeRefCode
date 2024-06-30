@@ -1,2 +1,6 @@
-mrc\liferefcode\LifeRefCode$1.class
+mrc\liferefcode\menu\ReferralMenu.class
+mrc\liferefcode\admin\AdminCommands.class
+mrc\liferefcode\PlayTimeTracker.class
+mrc\liferefcode\commands\ReferralMenuCommand.class
+mrc\liferefcode\commands\ReferralCommand.class
 mrc\liferefcode\LifeRefCode.class
